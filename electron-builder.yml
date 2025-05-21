@@ -1,0 +1,42 @@
+appId: com.luna.app
+productName: Luna
+copyright: Copyright © 2023
+directories:
+  output: dist
+  buildResources: build
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+      - .next
+      - public
+      - electron/preload.js
+      - electron/main.js
+      - node_modules/**/*
+electronVersion: 28.1.0
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: public/icons/icon-512x512.png
+  artifactName: ${productName}-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Luna
+  uninstallDisplayName: Luna
+  installerIcon: public/icons/icon-512x512.png
+  uninstallerIcon: public/icons/icon-512x512.png
+  installerHeaderIcon: public/icons/icon-512x512.png
+  artifactName: ${productName}-Setup-${version}.${ext}
+portable:
+  artifactName: ${productName}-Portable-${version}.${ext}

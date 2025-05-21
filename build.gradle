@@ -1,0 +1,147 @@
+plugins {
+    id 'base'
+    id 'com.github.node-gradle.node' version '3.5.1'
+}
+
+node {
+    version = '18.16.0'
+    download = true
+    workDir = file("${project.buildDir}/nodejs")
+    npmWorkDir = file("${project.buildDir}/npm")
+    nodeModulesDir = file("${project.projectDir}")
+    
+    // npm 설치 시 상세 로그 출력 - 문자열로 변경
+    npmCommand = 'install --verbose'
+    
+    // Set npm version directly
+    npmVersion = '9.5.1'  // npm 버전 명시
+}
+
+// Luna 애플리케이션 버전 및 환경 변수 설정
+def lunaVersion = '1.0.0'
+def googleApiKey = 'AIzaSyAiFX1mcpCnMgsHqHvp8NJOAGU7ZN4yVDs'
+def googleId = 'f4db37719b0144276'
+
+// 환경 변수 파일 생성 태스크
+task createEnvFile {
+    doLast {
+        def envFile = file('.env.production')
+        envFile.text = """GOOGLE_API_KEY=${googleApiKey}
+GOOGLE_ID=${googleId}
+"""
+        println "Created .env.production file with API keys"
+    }
+}
+
+// npm 명령어를 직접 실행하는 대체 태스크
+task npmInstallDirect(type: Exec) {
+    description = 'npm install을 직접 실행합니다.'
+    
+    // Windows에서는 cmd를 통해 실행
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        commandLine 'cmd', '/c', 'npm', 'install'
+    } else {
+        commandLine 'npm', 'install'
+    }
+    
+    // 오류 발생 시 상세 정보 출력
+    doFirst {
+        println "npm install 직접 실행 중..."
+    }
+    
+    doLast {
+        println "npm install 완료"
+    }
+}
+
+// Next.js 빌드 태스크 (npm 직접 실행 버전)
+task buildNextAppDirect(type: Exec) {
+    description = 'Next.js 앱을 직접 npm 명령으로 빌드합니다.'
+    dependsOn npmInstallDirect
+    
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        commandLine 'cmd', '/c', 'npm', 'run', 'build'
+    } else {
+        commandLine 'npm', 'run', 'build'
+    }
+}
+
+// Electron 애플리케이션 빌드 태스크 (Windows, npm 직접 실행 버전)
+task buildWindowsAppDirect(type: Exec) {
+    description = 'Windows 앱을 직접 npm 명령으로 빌드합니다.'
+    dependsOn buildNextAppDirect, createEnvFile
+    
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        commandLine 'cmd', '/c', 'npm', 'run', 'build-win-exe'
+    } else {
+        commandLine 'npm', 'run', 'build-win-exe'
+    }
+    
+    doLast {
+        println "Windows 애플리케이션 빌드 완료: ${project.projectDir}/dist/Luna-Setup-${lunaVersion}.exe"
+        println "포터블 버전: ${project.projectDir}/dist/Luna-Portable-${lunaVersion}.exe"
+    }
+}
+
+// 기존 태스크 유지
+task buildNextApp(type: NpmTask) {
+    dependsOn npmInstall
+    args = ['run', 'build']
+}
+
+task buildWindowsApp(type: NpmTask) {
+    dependsOn buildNextApp, createEnvFile
+    args = ['run', 'build-win-exe']
+    
+    doLast {
+        println "Windows 애플리케이션 빌드 완료: ${project.projectDir}/dist/Luna-Setup-${lunaVersion}.exe"
+        println "포터블 버전: ${project.projectDir}/dist/Luna-Portable-${lunaVersion}.exe"
+    }
+}
+
+task runElectronDev(type: NpmTask) {
+    dependsOn npmInstall, createEnvFile
+    args = ['run', 'electron-dev']
+}
+
+// 기본 태스크를 직접 실행 버전으로 변경
+defaultTasks 'buildWindowsAppDirect'
+
+// 빌드 디렉토리 정리 태스크
+task cleanDist(type: Delete) {
+    delete 'dist'
+    delete '.next'
+    delete 'out'
+}
+
+clean.dependsOn cleanDist
+
+// 문제 해결을 위한 진단 태스크
+task npmDebug {
+    doLast {
+        println "Node.js 및 npm 버전 확인"
+        if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+            exec {
+                commandLine 'cmd', '/c', 'node', '--version'
+            }
+            exec {
+                commandLine 'cmd', '/c', 'npm', '--version'
+            }
+        } else {
+            exec {
+                commandLine 'node', '--version'
+            }
+            exec {
+                commandLine 'npm', '--version'
+            }
+        }
+        
+        println "package.json 확인"
+        def packageJson = file('package.json')
+        if (packageJson.exists()) {
+            println "package.json 파일이 존재합니다."
+        } else {
+            println "package.json 파일이 존재하지 않습니다!"
+        }
+    }
+}

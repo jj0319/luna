@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostics - Google Search Integration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Search API Diagnostics</h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">API Configuration</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">Environment Variables</h6>
+                <ul class="list-group mb-4">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Google API Key
+                        <span th:if="${apiKeyConfigured}" class="badge bg-success">Set</span>
+                        <span th:unless="${apiKeyConfigured}" class="badge bg-danger">Not Set</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Google CX ID
+                        <span th:if="${cxConfigured}" class="badge bg-success">Set</span>
+                        <span th:unless="${cxConfigured}" class="badge bg-danger">Not Set</span>
+                    </li>
+                </ul>
+                
+                <h6 class="mb-3">Test Search</h6>
+                <form id="testForm" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="testQuery" class="form-control" value="test" placeholder="Enter test query">
+                        <button class="btn btn-primary" type="submit" id="testButton">
+                            Run Test Search
+                        </button>
+                    </div>
+                </form>
+                
+                <div id="testResults" class="d-none">
+                    <div id="testSuccess" class="alert alert-success d-none" role="alert">
+                        Search API is working correctly!
+                    </div>
+                    
+                    <div id="testError" class="alert alert-danger d-none" role="alert">
+                        <h5 class="alert-heading">Search API Error</h5>
+                        <p id="errorMessage"></p>
+                        <hr>
+                        <pre id="errorDetails" class="mb-0"></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Last checked: <span th:text="${timestamp}"></span></span>
+                    <a href="/" class="btn btn-outline-primary">Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const testButton = document.getElementById('testButton');
+            const testQuery = document.getElementById('testQuery').value;
+            const testResults = document.getElementById('testResults');
+            const testSuccess = document.getElementById('testSuccess');
+            const testError = document.getElementById('testError');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorDetails = document.getElementById('errorDetails');
+            
+            testButton.disabled = true;
+            testButton.innerHTML = 'Testing...';
+            testResults.classList.add('d-none');
+            testSuccess.classList.add('d-none');
+            testError.classList.add('d-none');
+            
+            fetch(`/api/search?query=${encodeURIComponent(testQuery)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw { status: response.status, data: data };
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    testResults.classList.remove('d-none');
+                    testSuccess.classList.remove('d-none');
+                })
+                .catch(error => {
+                    testResults.classList.remove('d-none');
+                    testError.classList.remove('d-none');
+                    
+                    errorMessage.textContent = `Search API returned an error (Status: ${error.status || 'Unknown'})`;
+                    errorDetails.textContent = JSON.stringify(error.data || error, null, 2);
+                })
+                .finally(() => {
+                    testButton.disabled = false;
+                    testButton.innerHTML = 'Run Test Search';
+                });
+        });
+    </script>
+</body>
+</html>

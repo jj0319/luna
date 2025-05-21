@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "App": {
+      "appId": "com.airesearch.app",
+      "appName": "AI 연구 플랫폼",
+      "webDir": "out",
+      "bundledWebRuntime": false
+    },
+    "CapacitorUrlScheme": {
+      "schemes": ["airesearch"]
+    }
+  }
+}

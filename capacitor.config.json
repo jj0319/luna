@@ -1,0 +1,9 @@
+{
+  "appId": "com.luna.app",
+  "appName": "Luna",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
